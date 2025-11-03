@@ -1,0 +1,46 @@
+name: CML Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  train-and-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install pandas scikit-learn matplotlib seaborn
+          pip install cml
+
+      - name: Train model and generate report
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Run the training script and capture output
+          python main.py > results.txt
+
+          # Create CML report
+          echo "# ML Model Training Report" > report.md
+          echo "" >> report.md
+          echo "## Training Results" >> report.md
+          echo "" >> report.md
+          echo "\`\`\`" >> report.md
+          cat results.txt >> report.md
+          echo "\`\`\`" >> report.md
+
+          # Post comment to PR with CML
+          cml comment create report.md
